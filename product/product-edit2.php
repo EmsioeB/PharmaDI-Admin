@@ -2,6 +2,9 @@
 <html lang="en">
 <?php
 require_once "product-pdo.php";
+$product = new Product();
+$prod = $product->prodDetail($_GET['prodId']);
+$prodImg = $product->prodDetailImg($_GET['prodId']);
 $brand = new Brand();
 $brands = $brand->getData();
 $tag = new Tag();
@@ -9,8 +12,9 @@ $tags = $tag->getData();
 $cate = new Category();
 $cates = $cate->getData();
 $listImg = [];
+$listDeleteImg = [];
 
-$countries = json_decode(file_get_contents('https://restcountries.com/v3.1/all'));
+// $countries = json_decode(file_get_contents('https://restcountries.com/v3.1/all'));
 ?>
 
 <head>
@@ -21,7 +25,7 @@ $countries = json_decode(file_get_contents('https://restcountries.com/v3.1/all')
     <link href="https://fonts.googleapis.com/css2?family=Inter&family=Roboto&display=swap" rel="stylesheet">
     <link rel="shortcut icon" href="../asset/image/logo-shortcut.png" type="image/x-icon">
     <script src="https://cdn.tailwindcss.com"></script>
-    <title>Thêm mới sản phẩm</title>
+    <title> Chỉnh sửa sản phẩm</title>
     <style>
         body {
             font-family: "Inter";
@@ -32,14 +36,24 @@ $countries = json_decode(file_get_contents('https://restcountries.com/v3.1/all')
 </head>
 
 <body>
-    <div class="flex justify-between">
+    <div class="bg-[#505050] bg-opacity-[40%] h-[100vh] w-[100vw] fixed z-10 flex flex-col justify-center items-center hidden" id="popupCf">
+        <div class="bg-white absolute p-[40px] flex flex-col justify-center rounded-[8px]">
+            <span class="text-[#0091D0] text-[18px] font-[600] mb-2 flex justify-center">XOÁ SẢN PHẨM ĐÃ CHỌN?</span>
+            <span class="text-[#505050] text-[13px] mb-4 flex justify-center">Bạn chắc chắn muốn xoá sản phẩm đã chọn?</span>
+            <div class="flex w-full justify-center">
+                <button class="bg-white border border-solid text-[13px] border-[#d8d8d8] rounded-[8px] mr-4 py-[8px] px-[12px] " onclick="document.getElementById('popupCf').classList.toggle('hidden')">Huỷ bỏ</button>
+                <button class="bg-[#0091D0] text-white border border-solid text-[13px] border-[#d8d8d8] rounded-[8px] py-[8px] px-[12px]" onclick="window.location.href='http://localhost/PharmaDI-Admin/product/action-delete.php?prodId=<?= $prod['SKU'] ?>'"">Xác nhận</button>
+            </div>
+        </div>
+    </div>
+    <div class="flex w-full justify-between">
         <div class="menu bg-[#0091D0] w-[13%] max-h min-h-vh">
             <?php require_once '../menu.php'; ?>
         </div>
-        <form class="w-[87%]" method="POST" action="action-create.php">
+        <form class="w-[87%]" method="POST" action="action-edit.php">
             <!-- Menu -->
             <div
-                class="flex justify-between items-center w-full border-solid border-[#d8d8d8] border pb-2.5 pt-2 shadow-md">
+                class="flex w-full justify-between items-center w-full border-solid border-[#d8d8d8] border pb-2.5 pt-2 shadow-md">
                 <svg class="mx-[40px]" width="30" height="31" viewBox="0 0 30 31" fill="none"
                     xmlns="http://www.w3.org/2000/svg">
                     <path fill-rule="evenodd" clip-rule="evenodd"
@@ -52,7 +66,7 @@ $countries = json_decode(file_get_contents('https://restcountries.com/v3.1/all')
                         d="M25.9375 21.75C25.9375 22.2678 25.5178 22.6875 25 22.6875L5 22.6875C4.48223 22.6875 4.0625 22.2678 4.0625 21.75C4.0625 21.2322 4.48223 20.8125 5 20.8125L25 20.8125C25.5178 20.8125 25.9375 21.2322 25.9375 21.75Z"
                         fill="#0091D0" />
                 </svg>
-                <div class="flex justify-between items-center p-[5px] mx-[40px] ">
+                <div class="flex w-full justify-between items-center p-[5px] mx-[40px] ">
                     <svg width="24" height="25" viewBox="0 0 24 25" fill="none" xmlns="http://www.w3.org/2000/svg">
                         <path fill-rule="evenodd" clip-rule="evenodd"
                             d="M8.25 9.5C8.25 7.42893 9.92893 5.75 12 5.75C14.0711 5.75 15.75 7.42893 15.75 9.5C15.75 11.5711 14.0711 13.25 12 13.25C9.92893 13.25 8.25 11.5711 8.25 9.5ZM12 7.25C10.7574 7.25 9.75 8.25736 9.75 9.5C9.75 10.7426 10.7574 11.75 12 11.75C13.2426 11.75 14.25 10.7426 14.25 9.5C14.25 8.25736 13.2426 7.25 12 7.25Z"
@@ -70,41 +84,72 @@ $countries = json_decode(file_get_contents('https://restcountries.com/v3.1/all')
                 </div>
             </div>
             <!-- Content -->
-            <div class="flex flex-col px-[40px] py-[20px] text-[#505050]">
+            <div class="flex w-full flex-col px-[40px] py-[20px] text-[#505050]">
                 <!-- Breadscumb -->
-                <div class="flex items-center text-[14px]">
+                <div class="flex w-full items-center text-[14px]">
                     <span class="px-1 cursor-pointer"
                         onclick="window.location.href='http://localhost/PharmaDI-Admin/product/product-list.php'">Danh
                         sách sản phẩm</span>
                     <svg width="8" height="14" viewBox="0 0 8 14" fill="none" xmlns="http://www.w3.org/2000/svg">
                         <path fill-rule="evenodd" clip-rule="evenodd"
                             d="M1.09327 0.692102C1.35535 0.467463 1.74991 0.497814 1.97455 0.759893L6.97455 6.59323C7.17517 6.82728 7.17517 7.17266 6.97455 7.40672L1.97455 13.24C1.74991 13.5021 1.35535 13.5325 1.09327 13.3078C0.831188 13.0832 0.800837 12.6886 1.02548 12.4266L5.67684 6.99997L1.02548 1.57338C0.800837 1.3113 0.831188 0.916741 1.09327 0.692102Z"
+                            fill="#505050" />
+                    </svg>
+                    <span class="px-1 cursor-pointer"
+                        onclick="window.location.href='http://localhost/PharmaDI-Admin/product/product-detail.php?prodId=<?= $prod['SKU'] ?>'">Chi
+                        tiết sản phẩm</span>
+                    <svg width="8" height="14" viewBox="0 0 8 14" fill="none" xmlns="http://www.w3.org/2000/svg">
+                        <path fill-rule="evenodd" clip-rule="evenodd"
+                            d="M1.09327 0.692102C1.35535 0.467463 1.74991 0.497814 1.97455 0.759893L6.97455 6.59323C7.17517 6.82728 7.17517 7.17266 6.97455 7.40672L1.97455 13.24C1.74991 13.5021 1.35535 13.5325 1.09327 13.3078C0.831188 13.0832 0.800837 12.6886 1.02548 12.4266L5.67684 6.99997L1.02548 1.57338C0.800837 1.3113 0.831188 0.916741 1.09327 0.692102Z"
                             fill="#0091D0" />
                     </svg>
-                    <span class="text-[#0091D0] px-1 font-[600]">Thêm mới sản phẩm</span>
+                    <span class="text-[#0091D0] px-1 font-[600]"> Chỉnh sửa sản phẩm</span>
                 </div>
                 <!-- Title -->
-                <span class="text-[19px] font-[600] text-[#0091D0] py-[20px]">THÊM MỚI SẢN PHẨM</span>
+                <div class="flex w-full justify-between items-center py-[25px]">
+                    <span class="text-[#0091D0] font-[600]">CHỈNH SỬA SẢN PHẨM</span>
+                    <button type="button"
+                        class="border-[#15A5E3] border border-solid px-[12px] py-[5px] text-[13px] rounded-[8px] text-[#0091D0]"
+                        onclick="document.getElementById('popupCf').classList.toggle('hidden')">Xoá
+                        sản phẩm</button>
+                </div>
                 <!-- Textbox -->
-                <div class="flex justify-between mt-1">
-                    <div class="relative">
+                <div class="flex w-full justify-between mt-1">
+                    <div class="relative w-full">
                         <span class="text-[13px] absolute px-[5px] bg-white -top-[10px] left-[15px]">Mã sản phẩm</span>
-                        <input type="text" name="prodId"
-                            class="px-2.5 pl-[20px] py-[8px] w-[280px] border border-solid border-[#d8d8d8] rounded-[6px] focus-within:border-[#0091D0] focus-within:border focus-within:border-solid outline-0 text-[13px]">
+                        <input type="text" name="prodId" value="<?= $prod['SKU'] ?>" readonly
+                            class="px-2.5 w-full pl-[20px] py-[8px] w-[280px] border border-solid border-[#d8d8d8] rounded-[6px] outline-0 text-[13px]">
                     </div>
-                    <div class="relative">
+                    <div class="relative w-full" onclick="showDroplist('status-droplist')" id='status-prod'>
                         <span class="text-[13px] absolute px-[5px] bg-white -top-[10px] left-[15px]">Trạng thái</span>
-                        <input type="text" value="0" class="hidden" name="prodStatus">
-                        <input type="text"
-                            class="px-2.5 pl-[20px] py-[8px] w-[280px] border border-solid border-[#d8d8d8] rounded-[6px] outline-0 text-[13px]"
-                            value="Chờ duyệt" readonly>
+                        <input type="text" value="<?= $prod['prodStatus'] ?>" class="hidden" name="prodStatus">
+                        <input type="text" readonly
+                            value="<?= $prod['prodStatus'] == 1 ? "Đã duyệt" : ($prod['prodStatus'] == 0 ? "Chờ duyệt" : "Không duyệt") ?>"
+                            class="cursor-pointer px-2.5 pl-[20px] py-[8px] w-[280px] border border-solid border-[#d8d8d8] rounded-[6px] focus-within:border focus-within:border-solid focus-within:border-[#0091D0] outline-0 text-[13px]">
+                        <svg class="absolute right-[10px] top-[11px]" width="15" height="15" viewBox="0 0 15 15"
+                            fill="none" xmlns="http://www.w3.org/2000/svg">
+                            <path fill-rule="evenodd" clip-rule="evenodd"
+                                d="M2.76911 5.31995C2.93759 5.12339 3.23351 5.10063 3.43007 5.26911L7.50001 8.75763L11.57 5.26911C11.7665 5.10063 12.0624 5.12339 12.2309 5.31995C12.3994 5.51651 12.3766 5.81243 12.1801 5.98091L7.80507 9.73091C7.62953 9.88138 7.37049 9.88138 7.19495 9.73091L2.81995 5.98091C2.62339 5.81243 2.60063 5.51651 2.76911 5.31995Z"
+                                fill="#1C274C" />
                         </svg>
+                        <div class="absolute flex flex-col bg-white py-2 rounded-[6px] border border-[#d8d8d8] text-[13px] hidden w-[280px] z-10"
+                            id="status-droplist">
+                            <span class="hover:bg-gray-100 px-[20px] py-[3px] text-[#505050]"
+                                onclick="select('status-prod', 1, 'Đã duyệt')">Đã duyệt</span>
+                            <span class="hover:bg-gray-100 px-[20px] py-[3px] text-[#505050]"
+                                onclick="select('status-prod', 0, 'Chờ duyệt')">Chờ duyệt</span>
+                            <span class="hover:bg-gray-100 px-[20px] py-[3px] text-[#505050]"
+                                onclick="select('status-prod', 2, 'Không duyệt')">Không duyệt</span>
+                        </div>
                     </div>
-                    <div class="relative" onclick="showDroplist('cate-droplist')" id='product-cate'>
+                    <div class="relative w-full" onclick="showDroplist('cate-droplist')" id='product-cate'>
                         <span class="text-[13px] absolute px-[5px] bg-white -top-[10px] left-[15px]">Danh mục</span>
-                        <input type="text" value="" class="hidden" name="prodCateId">
-                        <input type="text"
-                            class="cursor-pointer px-2.5 pl-[20px] py-[8px] w-[280px] border border-solid border-[#d8d8d8] rounded-[6px] focus-within:border-[#0091D0] focus-within:border focus-within:border-solid outline-0 text-[13px]"
+                        <input type="text" value="<?= $prod['cateId'] ?>" class="hidden" name="prodCateId">
+                        <input type="text" value="<?php
+                        foreach ($cates as $cate)
+                            if ($prod['cateId'] == $cate['cateId'])
+                                echo $cate['cateName'];
+                        ?>" class="cursor-pointer px-2.5 pl-[20px] py-[8px] w-[280px] border border-solid border-[#d8d8d8] rounded-[6px] focus-within:border-[#0091D0] focus-within:border focus-within:border-solid outline-0 text-[13px]"
                             readonly>
                         <svg class="absolute right-[10px] top-[11px]" width="15" height="15" viewBox="0 0 15 15"
                             fill="none" xmlns="http://www.w3.org/2000/svg">
@@ -122,11 +167,15 @@ $countries = json_decode(file_get_contents('https://restcountries.com/v3.1/all')
                             <?php endforeach; ?>
                         </div>
                     </div>
-                    <div class="relative" onclick="showDroplist('tag-droplist')" id='product-tag'>
+                    <div class="relative w-full" onclick="showDroplist('tag-droplist')" id='product-tag'>
                         <span class="text-[13px] absolute px-[5px] bg-white -top-[10px] left-[15px]">Tag</span>
-                        <input type="text" value="" class="hidden" name="prodTagId">
-                        <input type="text" readonly
-                            class="px-2.5 cursor-pointer pl-[20px] py-[8px] w-[280px] border border-solid border-[#d8d8d8] rounded-[6px] focus-within:border-[#0091D0] focus-within:border focus-within:border-solid outline-0 text-[13px]">
+                        <input type="text" value="<?= $prod['tagId'] ?>" class="hidden" name="prodTagId">
+                        <input type="text" readonly value="<?php
+                        foreach ($tags as $tag)
+                            if ($prod['tagId'] == $tag['tagId'])
+                                echo $tag['tagName'];
+                        ?>"
+                            class="px-2.5 w-full cursor-pointer pl-[20px] py-[8px] w-[280px] border border-solid border-[#d8d8d8] rounded-[6px] focus-within:border-[#0091D0] focus-within:border focus-within:border-solid outline-0 text-[13px]">
                         <svg class="absolute right-[10px] top-[11px]" width="15" height="15" viewBox="0 0 15 15"
                             fill="none" xmlns="http://www.w3.org/2000/svg">
                             <path fill-rule="evenodd" clip-rule="evenodd"
@@ -146,16 +195,20 @@ $countries = json_decode(file_get_contents('https://restcountries.com/v3.1/all')
                 </div>
                 <div class="relative flex justify-between mt-5 w-full">
                     <span class="text-[13px] absolute px-[5px] bg-white -top-[10px] left-[15px]">Tên sản phẩm</span>
-                    <input type="text" name="prodName"
-                        class="px-2.5 pl-[20px] py-[8px] w-[100%] border border-solid border-[#d8d8d8] rounded-[6px] focus-within:border-[#0091D0] focus-within:border focus-within:border-solid outline-0 text-[13px]">
+                    <input type="text" name="prodName" value='<?= $prod['prodName'] ?>'
+                        class="px-2.5 w-full pl-[20px] py-[8px] w-[100%] border border-solid border-[#d8d8d8] rounded-[6px] focus-within:border-[#0091D0] focus-within:border focus-within:border-solid outline-0 text-[13px]">
                 </div>
-                <div class="flex justify-between mt-5">
-                    <div class="relative" onclick="showDroplist('brand-droplist')" id="product-brand">
+                <div class="flex w-full justify-between mt-5">
+                    <div class="relative w-full" onclick="showDroplist('brand-droplist')" id="product-brand">
                         <span
                             class="text-[13px] cursor-pointer absolute px-[5px] bg-white -top-[10px] left-[15px]">Thương
                             hiệu</span>
-                        <input type="text" value="" class="hidden" name="prodBrandId">
-                        <input type="text" readonly
+                        <input type="text" value="<?= $prod['brandId'] ?>" class="hidden" name="prodBrandId">
+                        <input type="text" readonly value="<?php
+                        foreach ($brands as $brand)
+                            if ($prod['brandId'] == $brand['brandId'])
+                                echo $brand['brandName'];
+                        ?>"
                             class="cursor-pointer px-2.5 pl-[20px] py-[8px] w-[280px] border border-solid border-[#d8d8d8] rounded-[6px] focus-within:border-[#0091D0] focus-within:border focus-within:border-solid outline-0 text-[13px]">
                         <svg class="absolute right-[10px] top-[11px]" width="15" height="15" viewBox="0 0 15 15"
                             fill="none" xmlns="http://www.w3.org/2000/svg">
@@ -173,10 +226,10 @@ $countries = json_decode(file_get_contents('https://restcountries.com/v3.1/all')
                             <?php endforeach; ?>
                         </div>
                     </div>
-                    <div class="relative" onclick="showDroplist('country-droplist')" id='product-country'>
+                    <div class="relative w-full" onclick="showDroplist('country-droplist')" id='product-country'>
                         <span class="text-[13px] absolute px-[5px] bg-white -top-[10px] left-[15px]">Quốc gia</span>
-                        <input type="text" readonly name="prodCountry"
-                            class="px-2.5 cursor-pointer pl-[20px] py-[8px] w-[280px] border border-solid border-[#d8d8d8] rounded-[6px] focus-within:border-[#0091D0] focus-within:border focus-within:border-solid outline-0 text-[13px]">
+                        <input type="text" readonly name="prodCountry" value="<?= $prod['prodCountry'] ?>"
+                            class="px-2.5 w-full cursor-pointer pl-[20px] py-[8px] w-[280px] border border-solid border-[#d8d8d8] rounded-[6px] focus-within:border-[#0091D0] focus-within:border focus-within:border-solid outline-0 text-[13px]">
                         <svg class="absolute right-[10px] top-[11px]" width="15" height="15" viewBox="0 0 15 15"
                             fill="none" xmlns="http://www.w3.org/2000/svg">
                             <path fill-rule="evenodd" clip-rule="evenodd"
@@ -192,50 +245,53 @@ $countries = json_decode(file_get_contents('https://restcountries.com/v3.1/all')
                         </div>
 
                     </div>
-                    <div class="relative">
+                    <div class="relative w-full">
                         <span class="text-[13px] absolute px-[5px] bg-white -top-[10px] left-[15px]">Đơn vị</span>
-                        <input type="text" name="prodUnit"
-                            class="px-2.5 pl-[20px] py-[8px] w-[280px] border border-solid border-[#d8d8d8] rounded-[6px] focus-within:border-[#0091D0] focus-within:border focus-within:border-solid outline-0 text-[13px]">
+                        <input type="text" value="<?= $prod['prodUnit'] ?>" name="prodUnit"
+                            class="px-2.5 w-full pl-[20px] py-[8px] w-[280px] border border-solid border-[#d8d8d8] rounded-[6px] focus-within:border-[#0091D0] focus-within:border focus-within:border-solid outline-0 text-[13px]">
                     </div>
-                    <div class="relative">
+                    <div class="relative w-full">
                         <span class="text-[13px] absolute px-[5px] bg-white -top-[10px] left-[15px]">Đã bán</span>
-                        <input type="text" value="0" name="prodSellNumber"
-                            class="px-2.5 pl-[20px] py-[8px] w-[280px] border border-solid border-[#d8d8d8] rounded-[6px] outline-0 text-[13px]"
-                            readonly>
+                        <input type="text" value="<?= $prod['prodSellNumber'] ?>" name="prodSellNumber"
+                            class="px-2.5 w-full pl-[20px] py-[8px] w-[280px] border border-solid border-[#d8d8d8] rounded-[6px] outline-0 text-[13px]">
                     </div>
                 </div>
-                <div class="flex items-center justify-between">
+                <div class="flex w-full items-center justify-between">
                     <div class="relative flex mt-5">
                         <span class="text-[13px] absolute px-[5px] bg-white -top-[10px] left-[15px]">Giá gốc</span>
-                        <input type="text" name="prodPrice"
-                            class="px-2.5 pl-[20px] py-[8px] w-[605px] border border-solid border-[#d8d8d8] rounded-[6px] focus-within:border-[#0091D0] focus-within:border focus-within:border-solid outline-0 text-[13px]">
+                        <input type="text" name="prodPrice" value="<?= $prod['prodPrice'] ?>"
+                            class="px-2.5 w-full pl-[20px] py-[8px] w-[605px] border border-solid border-[#d8d8d8] rounded-[6px] focus-within:border-[#0091D0] focus-within:border focus-within:border-solid outline-0 text-[13px]">
                     </div>
                     <div class="relative flex mt-5">
                         <span class="text-[13px] absolute px-[5px] bg-white -top-[10px] left-[15px]">Giá khuyến
                             mãi</span>
-                        <input type="text" name="prodPriceSale"
-                            class="px-2.5 pl-[20px] py-[8px] w-[605px] border border-solid border-[#d8d8d8] rounded-[6px] focus-within:border-[#0091D0] focus-within:border focus-within:border-solid outline-0 text-[13px]">
+                        <input type="text" name="prodPriceSale" value="<?= $prod['prodPriceSale'] ?>"
+                            class="px-2.5 w-full pl-[20px] py-[8px] w-[605px] border border-solid border-[#d8d8d8] rounded-[6px] focus-within:border-[#0091D0] focus-within:border focus-within:border-solid outline-0 text-[13px]">
                     </div>
                 </div>
                 <div class="relative flex justify-between mt-5 w-full">
                     <span class="text-[13px] absolute px-[5px] bg-white -top-[10px] left-[15px]">Thành phần</span>
                     <textarea name="prodIngredient" id=""
-                        class="h-max min-h-[60px] px-2.5 pl-[20px] py-[8px] w-[100%] border border-solid border-[#d8d8d8] rounded-[6px] focus-within:border-[#0091D0] focus-within:border focus-within:border-solid outline-0 text-[13px] resize-none"></textarea>
+                        class="h-max min-h-[60px] px-2.5 pl-[20px] py-[8px] w-[100%] border border-solid border-[#d8d8d8] rounded-[6px] focus-within:border-[#0091D0] focus-within:border focus-within:border-solid outline-0 text-[13px] resize-none"
+                        value="<?= $prod['prodIngredient'] ?>"><?= $prod['prodIngredient'] ?></textarea>
                 </div>
                 <div class="relative flex justify-between mt-5 w-full">
                     <span class="text-[13px] absolute px-[5px] bg-white -top-[10px] left-[15px]">Dạng bào chế</span>
                     <textarea name="prodDosageForms" id=""
-                        class="h-max min-h-[60px] px-2.5 pl-[20px] py-[8px] w-[100%] border border-solid border-[#d8d8d8] rounded-[6px] focus-within:border-[#0091D0] focus-within:border focus-within:border-solid outline-0 text-[13px] resize-none"></textarea>
+                        class="h-max min-h-[60px] px-2.5 pl-[20px] py-[8px] w-[100%] border border-solid border-[#d8d8d8] rounded-[6px] focus-within:border-[#0091D0] focus-within:border focus-within:border-solid outline-0 text-[13px] resize-none"
+                        value="<?= $prod['prodDosageForms'] ?>"><?= $prod['prodDosageForms'] ?></textarea>
                 </div>
                 <div class="relative flex justify-between mt-5 w-full">
                     <span class="text-[13px] absolute px-[5px] bg-white -top-[10px] left-[15px]">Liều dùng</span>
                     <textarea name="prodDosage" id=""
-                        class="h-max min-h-[60px] px-2.5 pl-[20px] py-[8px] w-[100%] border border-solid border-[#d8d8d8] rounded-[6px] focus-within:border-[#0091D0] focus-within:border focus-within:border-solid outline-0 text-[13px] resize-none"></textarea>
+                        class="h-max min-h-[60px] px-2.5 pl-[20px] py-[8px] w-[100%] border border-solid border-[#d8d8d8] rounded-[6px] focus-within:border-[#0091D0] focus-within:border focus-within:border-solid outline-0 text-[13px] resize-none"
+                        value="<?= $prod['prodDosage'] ?>"><?= $prod['prodDosage'] ?></textarea>
                 </div>
                 <div class="relative flex justify-between mt-5 w-full">
                     <span class="text-[13px] absolute px-[5px] bg-white -top-[10px] left-[15px]">Mô tả sản phẩm</span>
                     <textarea name="prodDescript" id=""
-                        class="h-max min-h-[100px] px-2.5 pl-[20px] py-[8px] w-[100%] border border-solid border-[#d8d8d8] rounded-[6px] focus-within:border-[#0091D0] focus-within:border focus-within:border-solid outline-0 text-[13px] resize-none"></textarea>
+                        class="h-max min-h-[100px] px-2.5 pl-[20px] py-[8px] w-[100%] border border-solid border-[#d8d8d8] rounded-[6px] focus-within:border-[#0091D0] focus-within:border focus-within:border-solid outline-0 text-[13px] resize-none"
+                        value="<?= $prod['prodDescrip'] ?>"><?= $prod['prodDescrip'] ?></textarea>
                 </div>
                 <!-- Upload picture -->
                 <div class="flex">
@@ -254,18 +310,35 @@ $countries = json_decode(file_get_contents('https://restcountries.com/v3.1/all')
                         </svg>
                         <span class="text-[13px]">Tải ảnh</span>
                     </div>
-                    <div id='imgContainer' class="mr-5 h-[120px] mt-5 flex justify-center items-center cursor-pointer">
+                    <div id='imgContainer' class="flex w-full mr-5 h-[120px] mt-5 justify-center items-center ">
+                        <input type="hidden" name="prodDeleteImg" id="prodDeleteImg">
+                        <?php foreach ($prodImg as $index => $img): ?>
+                            <div class=" flex h-full cursor-pointer relative" id="<?= $index . "prodImg" ?>">
+                                <img src="<?= $img['imgPath']; ?>" alt=""
+                                    class="max-h-full mr-[20px] object-cover rounded-[8px] p-[8px]">
+                                <svg onclick="deleteImg('<?= $img['imgPath']; ?>', '<?= $index . "prodImg" ?>')"
+                                    class="absolute top-3 right-7" width="15" height="15" viewBox="0 0 15 15" fill="none"
+                                    xmlns="http://www.w3.org/2000/svg">
+                                    <rect width="15" height="15" rx="7.5" fill="white" />
+                                    <path
+                                        d="M10.0412 5.62174C10.2242 5.43868 10.2242 5.14189 10.0412 4.95883C9.8581 4.77577 9.5613 4.77577 9.37824 4.95883L7.49999 6.83708L5.62175 4.95883C5.43869 4.77577 5.14189 4.77577 4.95883 4.95883C4.77577 5.14189 4.77577 5.43868 4.95883 5.62174L6.83708 7.49999L4.95883 9.37824C4.77577 9.5613 4.77577 9.8581 4.95883 10.0412C5.14189 10.2242 5.43868 10.2242 5.62174 10.0412L7.49999 8.1629L9.37825 10.0412C9.56131 10.2242 9.8581 10.2242 10.0412 10.0412C10.2242 9.8581 10.2242 9.5613 10.0412 9.37824L8.16291 7.49999L10.0412 5.62174Z"
+                                        fill="#FF0000" />
+                                </svg>
+
+                            </div>
+                        <?php endforeach; ?>
                     </div>
 
                 </div>
                 <div class="justify-end flex mt-5">
+                <button type="button" onclick="window.location.href = 'http://localhost/PharmaDI-Admin/product/product-detail.php?prodId=<?= $prod['SKU'] ?>'"
+                        class="text-[12px] border border-[#d8d8d8]  rounded-[6px] px-[14px] py-[7px] mr-3 text-[#505050]">Huỷ bỏ</button>
                     <button type="submit"
-                        class="text-[12px] bg-[#15A5E3] text-white rounded-[6px] px-[14px] py-[7px]">Thêm mới</button>
+                        class="text-[12px] bg-[#15A5E3] text-white rounded-[6px] px-[14px] py-[7px]">Chỉnh sửa</button>
                 </div>
             </div>
         </form>
     </div>
-
 </body>
 
 </html>
@@ -289,6 +362,13 @@ $countries = json_decode(file_get_contents('https://restcountries.com/v3.1/all')
     }
 
     list = []
+    listDeleteImg = []
+
+    function deleteImg(imgPath, index) {
+        listDeleteImg.push(imgPath);
+        document.getElementById('prodDeleteImg').value = JSON.stringify({ delete: listDeleteImg })
+        document.getElementById(index).remove()
+    }
 
     function getImageInfo() {
         for (let i = 0; i < (file.files.length <= 4 ? file.files.length : 4); i++) {
